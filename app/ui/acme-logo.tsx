@@ -1,7 +1,7 @@
 import { GlobeAltIcon } from '@heroicons/react/24/outline';
 import { myFont } from '@/app/ui/fonts';
 
-export default function AcmeLogo() {
+export default function  AcmeLogo() {
   return (
     <div
       className={`${myFont.className} flex flex-row items-center leading-none text-white`}
