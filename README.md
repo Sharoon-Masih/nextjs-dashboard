@@ -12,15 +12,15 @@ The main goal of this project is to understand the working of NextJs, not to wri
 
 ![App Screenshot](https://nextjs.org/_next/image?url=%2Flearn%2Flight%2Flearn-folder-structure.png&w=3840&q=75)
 
- /app: Contains all the routes, components, and logic for your application, this is where you'll be mostly working from.
+ * /app: Contains all the routes, components, and logic for your application, this is where you'll be mostly working from.
 
-/app/lib: Contains functions used in your application, such as reusable utility functions and data fetching functions.
+* /app/lib: Contains functions used in your application, such as reusable utility functions and data fetching functions.
 
-/app/ui: Contains all the UI components for your application, such as cards, tables, and forms. To save time, we've pre-styled these components for you.
+* /app/ui: Contains all the UI components for your application, such as cards, tables, and forms. To save time, we've pre-styled these components for you.
 
-/public: Contains all the static assets for your application, such as images.
+* /public: Contains all the static assets for your application, such as images.
 
-/scripts: Contains a seeding script that you'll use to populate your database in a later chapter.
+* /scripts: Contains a seeding script that you'll use to populate your database in a later chapter.
 
 Config Files: You'll also notice config files such as next.config.js at the root of your application. Most of these files are created and pre-configured when you start a new project using create-next-app. You will not need to modify them in this course.
 
@@ -197,3 +197,179 @@ Splitting code by routes means that pages become isolated(far away). If a certai
 
 * usePathname is a Client Component hook that lets you read the current URL's pathname.
 * a Client Component with usePathname will be rendered into HTML on the initial page load. When navigating to a new route, this component does not need to be re-fetched. Instead, the component is downloaded once (in the client JavaScript bundle), and re-renders based on the current state.This means that at the moment when we navigate from one route segment to other, So first URL will be changed then usePathname will return you the pathName.
+
+
+
+## Chapter 7 (fetching data)
+### First we are going to see how to fetch data using API,ORM,SQL etc...
+
+### API layer:
+* In Simple words API is the bridge between your application code and Database.
+
+#### Senerios where we need to use API for fetching Data:
+* If you want to fetch data from any 3rd party service like Google, zoom etc that provide an API to interact with their Databases, So in that situation you can fetch data using API.
+* If you are fetching data on the client/browser, you should use API that runs on the server and provide you with the data on client, So that your personal Database secrets/key remain hide. 
+
+### Database Queries
+* When you're creating a full-stack application, you'll also need to write logic to interact with your database. For relational databases like Postgres, you can do this with SQL, or an ORM like Prisma.
+There are a few cases where you have to write database queries:
+* When creating your API endpoints you need to write logic to interact with your database. or defining methods in API docs like get,post,patch so we have to write logic for these methods as well,like here we are not handling delete method so we will not define logic for delete method but we have to define logic for other method we have mentioned above.
+
+* If you are using React Server Component, you can directly fetch data from Database without using API and your Database secrets will also be secured because Data will be fetched on Server not on client.
+
+### Using Server Component:
+By default, Next.js applications use React Server Components.
+remember some keypoints before working with server component:
+* Dont use any hook like useEffect, useState etc or any data fetching library while working with server component.
+* Server Components execute on the server, so you can keep expensive data fetches and logic on the server and only send the result to the client.
+* As mentioned before, since Server Components execute on the server, you can query the database directly without an additional API layer.
+
+### Using SQL:
+There are a few reasons why we'll be using SQL:
+
+* SQL is the industry standard for querying relational databases (e.g. ORMs generate SQL under the hood).
+* Having a basic understanding of SQL can help you understand the fundamentals of relational databases, allowing you to apply your knowledge to other tools.
+* SQL is versatile, allowing you to fetch and manipulate specific data.
+* The Vercel [ Postgres SDK](https://vercel.com/docs/storage/vercel-postgres/sdk#preventing-sql-injections) provides protection against SQL injections.
+This function allows you to query your database:
+
+import { sql } from '@vercel/postgres';
+
+
+note: You can call sql inside any Server Component.
+
+Q-What does SQL allow you to do in terms of fetching data? hint: answer is hidden inside the above points.
+
+### However... there are two things you need to be aware of:
+
+1-The data requests are unintentionally blocking each other, creating a request waterfall.
+
+2-By default, Next.js prerenders routes to improve performance, this is called Static Rendering. So if your data changes, it won't be reflected in your dashboard.
+
+Let's discuss number 1 in this chapter, then look into detail at number 2 in the next chapter.
+
+### What are request waterfall ?
+* A "waterfall" refers to a sequence of network requests that depend on the completion of previous requests. In the case of data fetching, each request can only begin once the previous request has returned data.
+![request](https://nextjs.org/_next/image?url=%2Flearn%2Flight%2Fsequential-parallel-data-fetching.png&w=3840&q=75)
+* In above picture we can see that we need to wait for fetchRevenue() to execute before fetchLatestInvoices() can start running, and so on.
+* we can also say that each request will execute in a sequenced way. Like: according to above pic first fetchRevenue will execute, then fetchLatestInvoices and so on.
+This pattern is not necessarily bad. There may be cases where you want waterfalls because you want a condition to be satisfied before you make the next request. For example, you might want to fetch a user's ID and profile information first. Once you have the ID, you might then proceed to fetch their list of friends. In this case, each request is contingent(depending on the first one happening,mtlb ka har request jo usse pehli wali request ka response hai uspa depend kregi) on the data returned from the previous request.
+
+### Parallel data fetching
+* A common way to avoid request waterfalls is using the approach of parallel data fetching.
+* In parallel data fetching all requests run at the same time parallely, you can see this in above picture as well.
+
+In JavaScript, you can use the [Promise.all()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all)  functions to initiate all promises at the same time. 
+
+By using this pattern, you can:
+
+* Start executing all data fetches at the same time, which can lead to performance gains.
+
+* Use a native JavaScript pattern that can be applied to any library or framework.
+
+However, there is one disadvantage of relying only on this JavaScript pattern that is parallel data fetching: what happens if one data request is slower than all the others? we will discuss it in next chapter.
+
+
+
+
+
+
+
+## Chapter 8 (Static and Dynamic rendering)
+### As we discussed in previous chapter that we have to be aware of two things:
+1-request waterfall, which we have discussed in previous chapter.
+
+2-By default, Next.js prerenders routes to improve performance, this is called Static Rendering. So if your data changes, it won't be reflected in your dashboard.
+
+### Static rendering
+* With static rendering, data fetching and rendering happens on the server at build time (when you deploy) or during revalidation. The result can then be distributed and cached in a Content Delivery Network (CDN).
+Whenever a user visits your application, the cached result is served.benefits of static rendering:
+* Faster Websites - Prerendered content can be cached and globally distributed. This ensures that users around the world can access your website's content more quickly and reliably.
+* Reduced Server Load - Because the content is cached, your server does not have to dynamically generate content for each user request.
+* SEO - Prerendered content is easier for search engine crawlers to index, as the content is already available when the page loads. This can lead to improved search engine rankings.
+Static rendering is useful for UI with no data or data that is shared across users, such as a static blog post or a product page. It might not be a good fit for a dashboard that has personalized data that is regularly updated.
+
+#### what is CDN ?
+Imagine you own a bakery with delicious cookies. People from all over town come to buy them, but if someone lives far away, it takes a long time to get their cookies.
+
+A CDN, or Content Delivery Network, is like having delivery stores for your cookies in different parts of town.  Here's how it works for websites:
+
+* A website stores its content, like images and videos, on a main server.
+* The CDN has many servers spread around the world, closer to users.
+* When someone visits the website, the CDN delivers the content from the server nearest them.
+* This makes the website load faster because the data doesn't have to travel as far.
+
+
+
+### What is Dynamic Rendering?
+With dynamic rendering, content is rendered on the server for each user at request time (when the user visits the page). benefits of dynamic rendering:
+
+* Real-Time Data - Dynamic rendering allows your application to display real-time or frequently updated data. This is ideal for applications where data changes often.
+* User-Specific Content - It's easier to serve personalized content, such as dashboards or user profiles, and update the data based on user interaction.
+* Request Time Information - Dynamic rendering allows you to access information that can only be known at request time, such as cookies or the URL search parameters.
+
+#### what does mean by Request Time Information ?
+Imagine you run a clothing store website.  Regular (static) rendering would be like having a pre-printed catalog for everyone. It's fast, but everyone sees the same clothes, regardless of their preferences.
+
+Dynamic rendering with request time information is more like having a super-powered salesperson in your online store. Here's how it works:
+
+* **Cookies:** When a customer visits your site, the salesperson (the website) can check their "shopping bag cookie" to see what they looked at before.  Based on that, they can recommend similar outfits or show them items they were interested in.
+* **Search Parameters:** If a customer types "summer dresses" in the search bar, the salesperson can instantly show them all the summer dresses available, just like pulling them from the back based on the customer's request.
+
+Dynamic rendering uses things like cookies and search parameters, which are unique to each visit, to tailor the content for every visitor. It's like having a website that reacts and adjusts based on what each person is looking for.
+
+You can use a Next.js API called **unstable_noStore** inside your Server Components or data fetching functions to disable static rendering.basically, it does not store data in cache at build time so when there is no data in cache static rendering will not take place. 
+
+* In your file, import **unstable_noStore** from next/cache, and call it the top of your data fetching functions.
+
+### Simulating a Slow Data Fetch
+* dynamic rendering is a good first step. However... there is still one problem we mentioned in the previous chapter. What happens if one data request is slower than all the others?
+
+Let's see a slow data fetch,e.g: In your data file, uncomment the console.log and setTimeout inside fetchRevenue():
+
+export async function fetchRevenue(){
+  
+  try {
+    
+    // We artificially delay a response for demo purposes.
+
+    // Don't do this in production :)
+
+    console.log('Fetching revenue data...');
+    await new Promise((resolve) => setTimeout(resolve, 3000)); //this will block request for 3 sec
+ 
+    const data = await sql<Revenue>`SELECT * FROM revenue`;
+ 
+    console.log('Data fetch completed after 3 seconds.');
+ 
+    return data.rows;
+  } catch (error) {
+    
+    console.error('Database Error:', error);
+
+    throw new Error('Failed to fetch revenue data.');
+  }
+}
+
+* Now open http://localhost:3000/dashboard/ in a new tab and notice how the page takes longer to load. In your terminal, you should also see the following messages:
+
+Fetching revenue data...
+
+Data fetch completed after 3 seconds.
+
+
+* Actually in above, we've added an artificial 3-second delay to simulate a slow data fetch. The result is that now your whole page is blocked while the data is being fetched.
+
+Which brings us to a common challenge developers have to solve:
+
+* With dynamic rendering, your application is only as fast as your slowest data fetch.
+
+#### basically, in dynamic rendering it happens that let suppose we have send 3 request two requests fullfil successfully within millisec but one request is taking much time so the rest two will also wait until the first one processes.
+
+### another example
+Imagine you're making a delicious pizza. Dynamic rendering with data fetching is like ordering all the ingredients at once. It's great because you get everything you need, but...
+
+* **Slowest delivery holds everything back:** If the peppers take forever to arrive, you can't start making the pizza until they get there, even if all the other ingredients are ready.
+* **Fast website, slow data = slow experience:** Dynamic websites are built to be fast, but if it takes a long time to fetch a piece of data (like user info or product details), the entire website will wait for that data before showing anything.
+
+So, dynamic rendering with data fetching is awesome, but just like with pizza night, the slowest piece can slow everything down. 
