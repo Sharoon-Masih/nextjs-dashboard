@@ -9,6 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { Button } from '@/app/ui/button';
+import { UpdateInvoiceAction } from '@/app/lib/action';
 
 export default function EditInvoiceForm({
   invoice,
@@ -17,8 +18,9 @@ export default function EditInvoiceForm({
   invoice: InvoiceForm;
   customers: CustomerField[];
 }) {
+  const UpdateInvoiceActionWithId=UpdateInvoiceAction.bind(null,invoice.id) // you can pass id to the Server Action using JS bind. This will ensure that any values passed to the Server Action are encoded.
   return (
-    <form>
+    <form action={UpdateInvoiceActionWithId}> {/*action={UpdateInvoiceAction(invoice.id)} we cannot pass "id" to "UpdateInvoiceAction" like this,but main question is that jasa humna createInvoice ka action may automatically "FormData" ka through sab fields access krli thi like customerId etc so humay kiu zarorat hai yun "id" pass krnay ki actually waha par hum invoices create kr rhay thy toh waha ek unique "id" ki zarorat nhi thi waha par toh simple jo be data form ma put kia wo database ma jaka save hogya but yaha par humay kisi random invoice ko edit nahi krna balka usi invoice ko edit krna hai jiski "id" param ma get kr rhay hain or yeh id humay FormData say nhi balka param sa mil rhi hai isi lia isko alag sa server action ko dena hoga takay jo id ho uski base ba DB ma changes krein.  */}
       <div className="rounded-md bg-gray-50 p-4 md:p-6">
         {/* Customer Name */}
         <div className="mb-4">
